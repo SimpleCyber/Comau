@@ -16,9 +16,11 @@ interface SidebarProps {
     activeChatId: string | null;
     onSelectChat: (chatId: string) => void;
     onNewChat: () => void;
+    isCollapsed: boolean;
+    onToggleCollapse: () => void;
 }
 
-export function Sidebar({ activeChatId, onSelectChat, onNewChat }: SidebarProps) {
+export function Sidebar({ activeChatId, onSelectChat, onNewChat, isCollapsed, onToggleCollapse }: SidebarProps) {
     const { user } = useAuth();
     const [chats, setChats] = useState<Chat[]>([]);
     const [projects, setProjects] = useState<Project[]>([]);
@@ -144,13 +146,20 @@ export function Sidebar({ activeChatId, onSelectChat, onNewChat }: SidebarProps)
 
     return (
         <>
-            <aside className="w-[260px] h-screen bg-[#F9F9F9] text-gray-800 flex flex-col border-r border-gray-200 overflow-hidden font-sans">
+            <aside
+                className={`h-screen bg-[#F9F9F9] text-gray-800 flex flex-col border-r border-gray-200 overflow-hidden font-sans transition-all duration-300 ease-in-out ${isCollapsed ? "w-0 opacity-0 border-r-0" : "w-[260px] opacity-100"
+                    }`}
+            >
                 {/* Top Navigation & Branding */}
                 <div className="flex justify-between items-center p-3">
                     <div className="flex items-center gap-2 pl-2">
                         <Image src="/logo.png" alt="COMAU Logo" width={24} height={24} className="rounded-sm object-contain" />
                     </div>
-                    <button className="p-2 hover:bg-gray-200 rounded-lg transition-colors text-gray-500">
+                    <button
+                        onClick={onToggleCollapse}
+                        className="p-2 hover:bg-gray-200 rounded-lg transition-colors text-gray-500"
+                        title="Collapse Sidebar"
+                    >
                         <PanelLeftClose className="w-5 h-5" />
                     </button>
                 </div>

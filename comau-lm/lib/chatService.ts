@@ -22,6 +22,7 @@ export type Message = {
     createdAt?: Timestamp;
     senderId?: string; // For group chats to know who sent it
     senderName?: string;
+    senderPhotoURL?: string;
 };
 
 export type Chat = {
@@ -158,7 +159,8 @@ export const chatService = {
         role: "user" | "model",
         content: string,
         senderId?: string,
-        senderName?: string
+        senderName?: string,
+        senderPhotoURL?: string
     ) {
         const messagesRef = collection(db, "chats", chatId, "messages");
         const msgData: any = {
@@ -168,6 +170,7 @@ export const chatService = {
         };
         if (senderId) msgData.senderId = senderId;
         if (senderName) msgData.senderName = senderName;
+        if (senderPhotoURL) msgData.senderPhotoURL = senderPhotoURL;
 
         await addDoc(messagesRef, msgData);
 

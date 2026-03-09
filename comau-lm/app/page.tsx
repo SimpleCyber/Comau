@@ -7,7 +7,7 @@ import { Sidebar } from "@/components/Sidebar";
 import { ChatWindow } from "@/components/ChatWindow";
 import { useSearchParams, useRouter } from "next/navigation";
 import { chatService } from "@/lib/chatService";
-import { Users, X, Info } from "lucide-react";
+import { Users, X, Info, PanelLeftOpen } from "lucide-react";
 
 export default function Home() {
   return (
@@ -24,6 +24,7 @@ function ChatContainer() {
   const [sidebarKey, setSidebarKey] = useState(0); // To force sidebar refresh on new chat
   const [pendingJoinGroupId, setPendingJoinGroupId] = useState<string | null>(null);
   const [isJoining, setIsJoining] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const searchParams = useSearchParams();
   const router = useRouter();
   const { user } = useAuth();
@@ -70,14 +71,25 @@ function ChatContainer() {
   };
 
   return (
-    <div className="flex h-screen bg-white">
+    <div className="flex h-screen bg-white relative overflow-hidden">
       <Sidebar
         key={sidebarKey}
         activeChatId={activeChatId}
         onSelectChat={handleSelectChat}
         onNewChat={handleNewChat}
+        isCollapsed={isSidebarCollapsed}
+        onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
-      <div className="flex-1 overflow-hidden">
+      <div className={`flex-1 overflow-hidden transition-all duration-300 ease-in-out ${isSidebarCollapsed ? "ml-0" : ""}`}>
+        {isSidebarCollapsed && (
+          <button
+            onClick={() => setIsSidebarCollapsed(false)}
+            className="fixed top-4 left-4 z-40 p-2 bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 transition-colors text-gray-500"
+            title="Expand Sidebar"
+          >
+            <PanelLeftOpen className="w-5 h-5" />
+          </button>
+        )}
         <ChatWindow
           chatId={activeChatId}
           onChatCreated={handleChatCreated}
