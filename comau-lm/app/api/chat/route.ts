@@ -16,11 +16,15 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Gemini API Key is missing. Please configure it in .env.local" }, { status: 500 });
         }
 
-        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
         // Format history for Gemini API
         // Gemini expects an array of objects with 'role' (user or model) and 'parts' [{ text: string }]
-        const history = messages.slice(0, -1).map((msg: any) => ({
+        // The first message in history MUST be from the 'user' role.
+        const filteredMessages = messages.slice(0, -1);
+        const firstUserIndex = filteredMessages.findIndex((msg: any) => msg.role === "user");
+
+        const history = (firstUserIndex === -1 ? [] : filteredMessages.slice(firstUserIndex)).map((msg: any) => ({
             role: msg.role === "user" ? "user" : "model",
             parts: [{ text: msg.content }],
         }));
