@@ -23,6 +23,12 @@ export type Message = {
     senderId?: string; // For group chats to know who sent it
     senderName?: string;
     senderPhotoURL?: string;
+    // Agentic fields
+    thinkingSteps?: any[];
+    data?: any;
+    dataFormat?: "table" | "json";
+    needsUserInput?: boolean;
+    question?: string;
 };
 
 export type Chat = {
@@ -160,13 +166,15 @@ export const chatService = {
         content: string,
         senderId?: string,
         senderName?: string,
-        senderPhotoURL?: string
+        senderPhotoURL?: string,
+        additionalData?: Partial<Message>
     ) {
         const messagesRef = collection(db, "chats", chatId, "messages");
         const msgData: any = {
             role,
             content,
             createdAt: serverTimestamp(),
+            ...additionalData // Spread any extra agentic data (thinkingSteps, data)
         };
         if (senderId) msgData.senderId = senderId;
         if (senderName) msgData.senderName = senderName;

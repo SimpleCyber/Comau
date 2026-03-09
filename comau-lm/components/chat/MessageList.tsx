@@ -7,6 +7,8 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Message, Chat } from "@/lib/chatService";
 import { CodeBlock } from "./CodeBlock";
+import { ThinkingSteps } from "./ThinkingSteps";
+import { DataDisplay } from "./DataDisplay";
 
 interface MessageListProps {
     messages: Message[];
@@ -57,35 +59,51 @@ export function MessageList({
                                 </div>
                             </div>
                         )}
-                        <div className={`flex flex-col space-y-1.5 overflow-hidden max-w-[85%] ${message.role === "user" ? "items-end" : ""}`}>
+                        <div className={`flex flex-col space-y-1.5 overflow-hidden max-w-[85%] w-full ${message.role === "user" ? "items-end" : ""}`}>
                             {message.role === "model" && (
                                 <span className="font-semibold text-[15px] text-gray-800 ml-1">Assistant</span>
                             )}
-                            <div className={`prose prose-base max-w-none leading-relaxed text-[15.5px] ${message.role === "user"
-                                ? "bg-[#F3F4F6] text-gray-900 px-5 py-2.5 rounded-[22px]"
-                                : "text-gray-800"
-                                }`}>
-                                {message.role === "user" ? (
-                                    <p className="whitespace-pre-wrap m-0 font-medium">{message.content}</p>
-                                ) : (
-                                    <ReactMarkdown
-                                        remarkPlugins={[remarkGfm]}
-                                        components={{
-                                            code: CodeBlock,
-                                            p: ({ node, ...props }) => <p className="mb-4 last:mb-0" {...props} />,
-                                            ul: ({ node, ...props }) => <ul className="list-disc pl-6 mb-4 space-y-2" {...props} />,
-                                            ol: ({ node, ...props }) => <ol className="list-decimal pl-6 mb-4 space-y-2" {...props} />,
-                                            li: ({ node, ...props }) => <li className="marker:text-gray-500" {...props} />,
-                                            strong: ({ node, ...props }) => <strong className="font-semibold text-gray-900" {...props} />,
-                                            h1: ({ node, ...props }) => <h1 className="text-2xl font-bold mb-4 mt-6" {...props} />,
-                                            h2: ({ node, ...props }) => <h2 className="text-xl font-bold mb-3 mt-5" {...props} />,
-                                            h3: ({ node, ...props }) => <h3 className="text-lg font-bold mb-3 mt-4" {...props} />,
-                                        }}
-                                    >
-                                        {message.content}
-                                    </ReactMarkdown>
-                                )}
-                            </div>
+
+                            {/* Render Agentic Thinking Steps */}
+                            {message.role === "model" && message.thinkingSteps && message.thinkingSteps.length > 0 && (
+                                <ThinkingSteps
+                                    steps={message.thinkingSteps}
+                                    isComplete={!loading || index !== messages.length - 1 || !!message.content}
+                                />
+                            )}
+
+                            {message.content && (
+                                <div className={`prose prose-base max-w-none leading-relaxed text-[15.5px] ${message.role === "user"
+                                    ? "bg-[#F3F4F6] text-gray-900 px-5 py-2.5 rounded-[22px]"
+                                    : "text-gray-800"
+                                    }`}>
+                                    {message.role === "user" ? (
+                                        <p className="whitespace-pre-wrap m-0 font-medium">{message.content}</p>
+                                    ) : (
+                                        <ReactMarkdown
+                                            remarkPlugins={[remarkGfm]}
+                                            components={{
+                                                code: CodeBlock,
+                                                p: ({ node, ...props }) => <p className="mb-4 last:mb-0" {...props} />,
+                                                ul: ({ node, ...props }) => <ul className="list-disc pl-6 mb-4 space-y-2" {...props} />,
+                                                ol: ({ node, ...props }) => <ol className="list-decimal pl-6 mb-4 space-y-2" {...props} />,
+                                                li: ({ node, ...props }) => <li className="marker:text-gray-500" {...props} />,
+                                                strong: ({ node, ...props }) => <strong className="font-semibold text-gray-900" {...props} />,
+                                                h1: ({ node, ...props }) => <h1 className="text-2xl font-bold mb-4 mt-6" {...props} />,
+                                                h2: ({ node, ...props }) => <h2 className="text-xl font-bold mb-3 mt-5" {...props} />,
+                                                h3: ({ node, ...props }) => <h3 className="text-lg font-bold mb-3 mt-4" {...props} />,
+                                            }}
+                                        >
+                                            {message.content}
+                                        </ReactMarkdown>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Render Agentic Data Display */}
+                            {message.role === "model" && message.data && (
+                                <DataDisplay data={message.data} format={message.dataFormat} />
+                            )}
                         </div>
 
                         {message.role === "user" && chat?.type !== "group" && (

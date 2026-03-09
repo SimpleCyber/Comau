@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { chatService, Message, Chat } from "@/lib/chatService";
+import { ThinkingStep } from "@/lib/agent/orchestrator";
 
 // Import modular components
 import { ChatHeader } from "./chat/ChatHeader";
@@ -104,7 +105,7 @@ export function ChatWindow({ chatId, onChatCreated }: ChatWindowProps) {
                     content: m.role === "user" && m.senderName ? `[${m.senderName}]: ${m.content}` : m.content
                 }));
 
-                const response = await fetch("/api/chat", {
+                const response = await fetch("/api/agent", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
@@ -112,13 +113,104 @@ export function ChatWindow({ chatId, onChatCreated }: ChatWindowProps) {
                     }),
                 });
 
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.error || "Failed to generate response");
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(errorText || "Failed to generate response");
+                }
 
-                // 4. Add AI response
-                const aiMessage: Message = { role: "model", content: data.text };
-                setMessages(prev => [...prev, aiMessage]);
-                await chatService.addMessage(currentChatId!, "model", data.text);
+                if (!response.body) throw new Error("No response body");
+
+                // Initialize a new empty AI message
+                const newAiMsgId = Date.now().toString(); // Temporary ID
+                const initialAiMessage: Message = {
+                    id: newAiMsgId,
+                    role: "model",
+                    content: "Thinking...",
+                    thinkingSteps: []
+                };
+                setMessages(prev => [...prev, initialAiMessage]);
+                setLoading(false); // We have a message object now, so stop the global loading spinner
+
+                // Read the SSE stream
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+
+                let done = false;
+                let finalAiMessage = { ...initialAiMessage };
+
+                while (!done) {
+                    const { value, done: readerDone } = await reader.read();
+                    done = readerDone;
+
+                    if (value) {
+                        const chunk = decoder.decode(value);
+                        const lines = chunk.split("\n\n");
+
+                        for (const line of lines) {
+                            if (line.startsWith("data: ")) {
+                                try {
+                                    const eventData = JSON.parse(line.substring(6));
+
+                                    if (eventData.type === "thinking_step") {
+                                        setMessages(prev => prev.map(msg => {
+                                            if (msg.id === newAiMsgId) {
+                                                const currentSteps = msg.thinkingSteps || [];
+                                                const existingStepIndex = currentSteps.findIndex(s => s.id === eventData.step.id);
+
+                                                let newSteps;
+                                                if (existingStepIndex >= 0) {
+                                                    newSteps = [...currentSteps];
+                                                    newSteps[existingStepIndex] = eventData.step;
+                                                } else {
+                                                    newSteps = [...currentSteps, eventData.step];
+                                                }
+                                                finalAiMessage = { ...msg, thinkingSteps: newSteps };
+                                                return finalAiMessage;
+                                            }
+                                            return msg;
+                                        }));
+                                    } else if (eventData.type === "final_result") {
+                                        setMessages(prev => prev.map(msg => {
+                                            if (msg.id === newAiMsgId) {
+                                                finalAiMessage = {
+                                                    ...msg,
+                                                    content: eventData.answer || (eventData.needsUserInput ? eventData.question : ""),
+                                                    data: eventData.data,
+                                                    dataFormat: eventData.dataFormat,
+                                                    needsUserInput: eventData.needsUserInput,
+                                                    question: eventData.question
+                                                };
+                                                return finalAiMessage;
+                                            }
+                                            return msg;
+                                        }));
+                                    } else if (eventData.type === "error") {
+                                        throw new Error(eventData.message);
+                                    }
+                                } catch (e) {
+                                    console.error("Error parsing SSE stream line:", e, line);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Final save to Firebase
+                await chatService.addMessage(
+                    currentChatId!,
+                    "model",
+                    finalAiMessage.content,
+                    undefined,
+                    undefined,
+                    undefined,
+                    {
+                        thinkingSteps: finalAiMessage.thinkingSteps,
+                        data: finalAiMessage.data,
+                        dataFormat: finalAiMessage.dataFormat,
+                        needsUserInput: finalAiMessage.needsUserInput,
+                        question: finalAiMessage.question
+                    }
+                );
             }
 
         } catch (error: any) {
