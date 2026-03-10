@@ -2,6 +2,9 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getToolDeclarations } from "./registry";
 import { executeApiCall } from "./executor";
 
+// Side-effect import: registers all API endpoints in the registry
+import "./endpoints";
+
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 const MODEL_NAME = "gemini-2.5-flash-lite";
 

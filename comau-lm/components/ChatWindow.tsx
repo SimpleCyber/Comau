@@ -195,7 +195,14 @@ export function ChatWindow({ chatId, onChatCreated }: ChatWindowProps) {
                     }
                 }
 
-                // Final save to Firebase
+                // Final save to Firebase (sanitize undefined for Firestore)
+                const additionalData: any = {};
+                if (finalAiMessage.thinkingSteps) additionalData.thinkingSteps = finalAiMessage.thinkingSteps;
+                if (finalAiMessage.data !== undefined) additionalData.data = finalAiMessage.data;
+                if (finalAiMessage.dataFormat) additionalData.dataFormat = finalAiMessage.dataFormat;
+                if (finalAiMessage.needsUserInput !== undefined) additionalData.needsUserInput = finalAiMessage.needsUserInput;
+                if (finalAiMessage.question) additionalData.question = finalAiMessage.question;
+
                 await chatService.addMessage(
                     currentChatId!,
                     "model",
@@ -203,13 +210,7 @@ export function ChatWindow({ chatId, onChatCreated }: ChatWindowProps) {
                     undefined,
                     undefined,
                     undefined,
-                    {
-                        thinkingSteps: finalAiMessage.thinkingSteps,
-                        data: finalAiMessage.data,
-                        dataFormat: finalAiMessage.dataFormat,
-                        needsUserInput: finalAiMessage.needsUserInput,
-                        question: finalAiMessage.question
-                    }
+                    additionalData
                 );
             }
 

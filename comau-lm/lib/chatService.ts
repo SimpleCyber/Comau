@@ -174,8 +174,14 @@ export const chatService = {
             role,
             content,
             createdAt: serverTimestamp(),
-            ...additionalData // Spread any extra agentic data (thinkingSteps, data)
         };
+
+        // Sanitise additionalData to remove undefined fields which Firestore doesn't allow
+        if (additionalData) {
+            Object.entries(additionalData).forEach(([key, value]) => {
+                if (value !== undefined) msgData[key] = value;
+            });
+        }
         if (senderId) msgData.senderId = senderId;
         if (senderName) msgData.senderName = senderName;
         if (senderPhotoURL) msgData.senderPhotoURL = senderPhotoURL;

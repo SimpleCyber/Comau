@@ -23,8 +23,8 @@ export async function GET() {
                     headers: {
                         Accept: "application/json",
                     },
-                    // Short timeout to not keep the UI hanging
-                    signal: AbortSignal.timeout(5000),
+                    // High 5-minute timeout for slow local backends
+                    signal: AbortSignal.timeout(300000),
                 });
 
                 const latency = Date.now() - start;

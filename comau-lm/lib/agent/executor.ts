@@ -68,8 +68,8 @@ export async function executeApiCall(functionName: string, args: Record<string, 
             method: endpoint.method,
             headers,
             body,
-            // Don't wait forever
-            signal: AbortSignal.timeout(15000)
+            // 5 minute timeout for slow local backends
+            signal: AbortSignal.timeout(300000)
         });
 
         if (!response.ok) {
